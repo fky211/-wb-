@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新能源充电桩实时监控系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+            padding: 20px 30px;
+            border-bottom: 1px solid #1e293b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 24px;
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .header .time {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #0f172a;
+        }
+        .user-name {
+            font-size: 14px;
+            color: #e2e8f0;
+        }
+        .logout-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid #475569;
+            color: #94a3b8;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .logout-btn:hover {
+            border-color: #f87171;
+            color: #f87171;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #334155;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-card .label {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .stat-card.total .value { color: #38bdf8; }
+        .stat-card.idle .value { color: #4ade80; }
+        .stat-card.busy .value { color: #fbbf24; }
+        .stat-card.fault .value { color: #f87171; }
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover { border-color: #38bdf8; }
+        .filter-btn.active {
+            background: #38bdf8;
+            color: #0f172a;
+            border-color: #38bdf8;
+        }
+        .charger-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .charger-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #334155;
+            transition: all 0.2s;
+        }
+        .charger-card:hover {
+            border-color: #475569;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .charger-card .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .charger-card .name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .charger-card .status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-idle { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+        .status-busy { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .status-fault { background: rgba(248, 113, 113, 0.2); color: #f87171; }
+        .charger-card .info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .charger-card .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .charger-card .info-row span:last-child {
+            color: #e2e8f0;
+        }
+        .charger-card .power {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .charger-card .power .icon {
+            font-size: 20px;
+        }
+        .charger-card .power .value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #38bdf8;
+        }
+        .map-container {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+            border: 1px solid #334155;
+        }
+        .map-title {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #e2e8f0;
+        }
+        .map-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+        .map-item {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #334155;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .map-item:hover { border-color: #38bdf8; }
+        .map-item .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin: 0 auto 8px;
+        }
+        .map-item .dot.idle { background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.5); }
+        .map-item .dot.busy { background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.5); }
+        .map-item .dot.fault { background: #f87171; box-shadow: 0 0 8px rgba(248,113,113,0.5); }
+        .map-item .name { font-size: 12px; color: #94a3b8; }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+        .error {
+            text-align: center;
+            padding: 20px;
+            color: #f87171;
+            background: rgba(248,113,113,0.1);
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        @media (max-width: 768px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .map-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚡ 新能源充电桩实时监控系统</h1>
+        <div class="header-right">
+            <div class="user-info" id="userInfo" style="display: none;">
+                <div class="user-avatar" id="userAvatar">A</div>
+                <div class="user-name" id="userName">用户</div>
+                <button class="logout-btn" onclick="logout()">退出</button>
+            </div>
+            <div class="time" id="currentTime"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 统计卡片 -->
+        <div class="stats-row">
+            <div class="stat-card total">
+                <div class="label">充电桩总数</div>
+                <div class="value" id="statTotal">-</div>
+            </div>
+            <div class="stat-card idle">
+                <div class="label">空闲中</div>
+                <div class="value" id="statIdle">-</div>
+            </div>
+            <div class="stat-card busy">
+                <div class="label">使用中</div>
+                <div class="value" id="statBusy">-</div>
+            </div>
+            <div class="stat-card fault">
+                <div class="label">故障</div>
+                <div class="value" id="statFault">-</div>
+            </div>
+        </div>
+
+        <!-- 筛选按钮 -->
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="idle">空闲</button>
+            <button class="filter-btn" data-filter="busy">使用中</button>
+            <button class="filter-btn" data-filter="fault">故障</button>
+        </div>
+
+        <!-- 充电桩列表 -->
+        <div class="charger-grid" id="chargerGrid">
+            <div class="loading">加载中...</div>
+        </div>
+
+        <!-- 地图展示 -->
+        <div class="map-container">
+            <div class="map-title">充电桩分布图</div>
+            <div class="map-grid" id="mapGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let allChargers = [];
+        let currentFilter = 'all';
+
+        // 检查登录状态
+        async function checkLogin() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/user/info`);
+                const data = await resp.json();
+                if (data.code !== 0) {
+                    window.location.href = '/login.html';
+                    return null;
+                }
+                return data.data;
+            } catch (err) {
+                window.location.href = '/login.html';
+                return null;
+            }
+        }
+
+        // 显示用户信息
+        function showUserInfo(user) {
+            if (user) {
+                document.getElementById('userInfo').style.display = 'flex';
+                document.getElementById('userName').textContent = user.nickname || user.username;
+                document.getElementById('userAvatar').textContent =
+                    (user.nickname || user.username).charAt(0).toUpperCase();
+            }
+        }
+
+        // 登出
+        async function logout() {
+            try {
+                await fetch(`${API_BASE}/api/user/logout`);
+            } catch (err) {
+                // 忽略错误
+            }
+            localStorage.removeItem('user');
+            window.location.href = '/login.html';
+        }
+
+        // 更新时间
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent =
+                now.toLocaleString('zh-CN', { hour12: false });
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // 获取统计数据
+        async function fetchStats() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/stats`);
+                const data = await resp.json();
+                if (data.code === 0) {
+                    document.getElementById('statTotal').textContent = data.data.total;
+                    document.getElementById('statIdle').textContent = data.data.idle;
+                    document.getElementById('statBusy').textContent = data.data.busy;
+                    document.getElementById('statFault').textContent = data.data.fault;
+                }
+            } catch (e) {
+                console.error('Failed to fetch stats:', e);
+            }
+        }
+
+        // 获取充电桩列表
+        async function fetchChargers() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/chargers`);
+                const data = await resp.json();
+                if (data.code === 0) {
+                    allChargers = data.data;
+                    renderChargers();
+                    renderMap();
+                }
+            } catch (e) {
+                console.error('Failed to fetch chargers:', e);
+                document.getElementById('chargerGrid').innerHTML =
+                    '<div class="error">无法连接服务器，请检查后端是否启动</div>';
+            }
+        }
+
+        // 渲染充电桩列表
+        function renderChargers() {
+            const grid = document.getElementById('chargerGrid');
+            const filtered = currentFilter === 'all'
+                ? allChargers
+                : allChargers.filter(c => c.status === currentFilter);
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="loading">暂无数据</div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(c => `
+                <div class="charger-card">
+                    <div class="top">
+                        <div class="name">${c.name}</div>
+                        <div class="status status-${c.status}">${c.status_cn}</div>
+                    </div>
+                    <div class="info">
+                        <div class="info-row">
+                            <span>区域</span>
+                            <span>${c.area}</span>
+                        </div>
+                        <div class="info-row">
+                            <span>位置</span>
+                            <span>${c.location}</span>
+                        </div>
+                        <div class="info-row">
+                            <span>更新时间</span>
+                            <span>${c.update_time}</span>
+                        </div>
+                    </div>
+                    <div class="power">
+                        <div class="icon">⚡</div>
+                        <div class="value">${c.power} kW</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 渲染地图
+        function renderMap() {
+            const grid = document.getElementById('mapGrid');
+            grid.innerHTML = allChargers.map(c => `
+                <div class="map-item" title="${c.location}">
+                    <div class="dot ${c.status}"></div>
+                    <div class="name">${c.name}</div>
+                </div>
+            `).join('');
+        }
+
+        // 筛选按钮事件
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderChargers();
+            });
+        });
+
+        // 初始化
+        (async function init() {
+            const user = await checkLogin();
+            if (user) {
+                showUserInfo(user);
+                fetchStats();
+                fetchChargers();
+
+                // 定时刷新
+                setInterval(fetchStats, 5000);
+                setInterval(fetchChargers, 5000);
+            }
+        })();
+    </script>
+</body>
+</html>
